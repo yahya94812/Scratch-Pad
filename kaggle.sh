@@ -24,13 +24,13 @@ torchrun --standalone --nproc_per_node=2 -m scripts.base_train -- \
     --max-seq-len=256 \
     --device-batch-size=128 \
     --total-batch-size=65536 \
-    --eval-every=100 \
-    --eval-tokens=2560 \
-    --core-metric-every=1000 \
-    --sample-every=100 \
-    --num-iterations=10000 \
+    --eval-every=2 \
+    --eval-tokens=8192 \
+    --core-metric-every=4 \
+    --sample-every=5 \
+    --num-iterations=10 \
     --run="$WANDB_RUN" \
-    --save-every=5000
+    --save-every=5
 
 # evaluating the model
 python -m scripts.base_eval --device-batch-size=128 --split-tokens=256 --max-per-task=500
