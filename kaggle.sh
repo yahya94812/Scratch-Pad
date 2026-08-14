@@ -20,12 +20,12 @@ python -m scripts.tok_eval
 torchrun --standalone --nproc_per_node=2 -m scripts.base_train -- \
     --depth=8 \
     --head-dim=64 \
-    --window-pattern=S \
+    --window-pattern=L \
     --max-seq-len=256 \
     --device-batch-size=128 \
     --total-batch-size=65536 \
     --eval-every=2 \
-    --eval-tokens=8192 \
+    --eval-tokens=2560 \
     --core-metric-every=4 \
     --sample-every=5 \
     --num-iterations=10 \
