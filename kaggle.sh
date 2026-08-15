@@ -11,7 +11,7 @@
 # You may also want to run this script manually and one by one, copy pasting commands into your terminal.
 
 # all the setup stuff
-export NANOCHAT_BASE_DIR="/kaggle/working/cache/nanochat"
+export NANOCHAT_BASE_DIR="$HOME/.cache/nanochat"
 mkdir -p $NANOCHAT_BASE_DIR
 command -v uv &> /dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
 [ -d ".venv" ] || uv venv
@@ -20,6 +20,11 @@ source .venv/bin/activate
 if [ -z "$WANDB_RUN" ]; then
     WANDB_RUN=dummy
 fi
+
+# train tokenizer on ~2B characters (~34 seconds on my MacBook Pro M3 Max)
+python -m nanochat.dataset -n 3
+python -m scripts.tok_train --max-chars=1_900_000_000 --vocab-size=8000
+python -m scripts.tok_eval
 
 # train a small 6 layer model
 # I tuned this run to complete in about 30 minutes on my MacBook Pro M3 Max.
