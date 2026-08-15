@@ -1,38 +1,58 @@
 #!/bin/bash
 
+# Showing an example run for exercising some of the code paths on the CPU (or MPS on Macbooks)
+# This script was last updated/tuned on Jan 17, 2026.
+
+# Run as:
+# bash runs/runcpu.sh
+
+# NOTE: Training LLMs requires GPU compute and $$$. You will not get far on your Macbook.
+# Think of this run as educational/fun demo, not something you should expect to work well.
+# You may also want to run this script manually and one by one, copy pasting commands into your terminal.
+
 # all the setup stuff
-export NANOCHAT_BASE_DIR="/kaggle/working/cache/nanochat"
+export NANOCHAT_BASE_DIR="$HOME/.cache/nanochat"
 mkdir -p $NANOCHAT_BASE_DIR
 command -v uv &> /dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
 [ -d ".venv" ] || uv venv
 uv sync --extra gpu
 source .venv/bin/activate
-if [ -z "$WANDB_RUN" ]; then # It checks whether the environment variable WANDB_RUN is empty or unset, and if so, assigns it the value "dummy".
+if [ -z "$WANDB_RUN" ]; then
     WANDB_RUN=dummy
 fi
 
-# train a tiny tokenizer on ~1M characters (a few seconds)
+# train tokenizer on ~2B characters (~34 seconds on my MacBook Pro M3 Max)
 python -m nanochat.dataset -n 3
 python -m scripts.tok_train --max-chars=1_900_000_000 --vocab-size=8000
 python -m scripts.tok_eval
 
-# train the model for T4 X 2
-torchrun --standalone --nproc_per_node=2 -m scripts.base_train -- \
-    --depth=8 \
+# train a small 6 layer model
+# I tuned this run to complete in about 30 minutes on my MacBook Pro M3 Max.
+# To get better results, try increasing num_iterations, or get other ideas from your favorite LLM.
+torchrun --standalone --nproc_per_node=2 -m scripts.base_train \
+    --depth=6 \
     --head-dim=64 \
     --window-pattern=L \
-    --max-seq-len=256 \
+    --max-seq-len=512 \
     --device-batch-size=128 \
     --total-batch-size=65536 \
-    --eval-every=2 \
-    --eval-tokens=2560 \
-    --core-metric-every=4 \
-    --sample-every=5 \
-    --num-iterations=10 \
-    --run="$WANDB_RUN" \
-    --save-every=5
+    --eval-every=100 \
+    --eval-tokens=524288 \
+    --core-metric-every=-1 \
+    --sample-every=100 \
+    --num-iterations=5000 \
+    --run=$WANDB_RUN
+python -m scripts.base_eval --device-batch-size=1 --split-tokens=16384 --max-per-task=16
 
-# evaluating the model
-python -m scripts.base_eval --device-batch-size=128 --split-tokens=256 --max-per-task=500
+# SFT (~10 minutes on my MacBook Pro M3 Max)
+python -m scripts.chat_sft \
+    --eval-every=200 \
+    --eval-tokens=524288 \
+    --num-iterations=1500 \
+    --run=$WANDB_RUN
 
-echo "Done!."
+# Chat with the model over CLI
+# The model should be able to say that it is Paris.
+# It might even know that the color of the sky is blue.
+# Sometimes the model likes it if you first say Hi before you ask it questions.
+# python -m scripts.chat_cli -p "What is the capital of France?"
