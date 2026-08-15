@@ -29,7 +29,7 @@ python -m scripts.tok_eval
 # train a small 6 layer model
 # I tuned this run to complete in about 30 minutes on my MacBook Pro M3 Max.
 # To get better results, try increasing num_iterations, or get other ideas from your favorite LLM.
-torchrun --standalone --nproc_per_node=2 -m scripts.base_train \
+torchrun --standalone --nproc_per_node=2 -m scripts.base_train -- \
     --depth=6 \
     --head-dim=64 \
     --window-pattern=L \
